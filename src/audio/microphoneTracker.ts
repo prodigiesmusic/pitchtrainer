@@ -163,6 +163,17 @@ export class MicrophonePitchTracker {
     };
   }
 
+  resetTracking() {
+    this.history = [];
+    this.latest = {
+      timestampMs: performance.now(),
+      status: 'listening',
+      frequencyHz: null,
+      clarity: 0,
+      rms: 0
+    };
+  }
+
   getSmoothedFrame(targetPitchClass: number): SmoothedPitchFrame {
     const now = performance.now();
     const windowStart = now - this.settings.smoothingWindowMs;

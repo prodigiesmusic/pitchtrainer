@@ -66,6 +66,7 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [success, setSuccess] = useState(false);
+  const [noteSuggestion, setNoteSuggestion] = useState<{ index: number; label: string } | null>(null);
   const [bellPulseKey, setBellPulseKey] = useState(0);
   const [bellLoadError, setBellLoadError] = useState(false);
 
@@ -79,8 +80,42 @@ export default function App() {
   const frameRef = useRef<number | null>(null);
   const visualAnchorMidiRef = useRef<number | null>(null);
   const midiHistoryRef = useRef<Array<{ timeMs: number; midi: number }>>([]);
+  const targetRef = useRef(target);
+  const holdSecondsRef = useRef(holdSeconds);
+  const centsToleranceRef = useRef(centsTolerance);
+  const voiceModeRef = useRef<VoiceMode>(voiceMode);
+  const resolvedVoiceModeRef = useRef<ResolvedVoiceMode>(resolvedVoiceMode);
+  const wrongNoteHoldRef = useRef<{ pitchClass: number | null; startedMs: number | null }>({
+    pitchClass: null,
+    startedMs: null
+  });
+  const noteSuggestionRef = useRef<{ index: number; label: string } | null>(noteSuggestion);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    targetRef.current = target;
+  }, [target]);
+
+  useEffect(() => {
+    holdSecondsRef.current = holdSeconds;
+  }, [holdSeconds]);
+
+  useEffect(() => {
+    centsToleranceRef.current = centsTolerance;
+  }, [centsTolerance]);
+
+  useEffect(() => {
+    voiceModeRef.current = voiceMode;
+  }, [voiceMode]);
+
+  useEffect(() => {
+    resolvedVoiceModeRef.current = resolvedVoiceMode;
+  }, [resolvedVoiceMode]);
+
+  useEffect(() => {
+    noteSuggestionRef.current = noteSuggestion;
+  }, [noteSuggestion]);
 
   const playTargetSample = useCallback(() => {
     if (!target) return;
@@ -99,9 +134,12 @@ export default function App() {
 
   const gotoNextNote = useCallback(() => {
     setSuccess(false);
+    setNoteSuggestion(null);
     timerRef.current.reset();
+    wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
     visualAnchorMidiRef.current = null;
     midiHistoryRef.current = [];
+    trackerRef.current?.resetTracking();
     setProgress(0);
     setElapsedSeconds(0);
 
@@ -113,12 +151,27 @@ export default function App() {
     });
   }, [mode]);
 
+  const switchToSuggestedNote = useCallback((index: number) => {
+    setTargetIndex(index);
+    setNoteSuggestion(null);
+    setSuccess(false);
+    timerRef.current.reset();
+    wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
+    visualAnchorMidiRef.current = null;
+    midiHistoryRef.current = [];
+    trackerRef.current?.resetTracking();
+    setProgress(0);
+    setElapsedSeconds(0);
+  }, []);
+
   const stepPitchUi = useCallback(() => {
-    if (!trackerRef.current || !target) {
+    const liveTarget = targetRef.current;
+    if (!trackerRef.current || !liveTarget) {
       return;
     }
 
-    const frame = trackerRef.current.getSmoothedFrame(target.pitchClass);
+    const frame = trackerRef.current.getSmoothedFrame(liveTarget.pitchClass);
+    const nowMs = performance.now();
 
     if (frame.status === 'too_quiet') {
       setStatusText('Too quiet');
@@ -127,9 +180,10 @@ export default function App() {
       setInTune(false);
       setHasPitch(false);
       setGuidance(null);
-      const hold = timerRef.current.update(false, performance.now(), holdSeconds * 1000);
+      const hold = timerRef.current.update(false, nowMs, holdSecondsRef.current * 1000);
       setProgress(hold.progress);
       setElapsedSeconds(0);
+      wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
     } else if (frame.status === 'no_pitch' || frame.status === 'low_confidence' || frame.frequencyHz === null) {
       setStatusText('No pitch detected');
       setLineOffsetCents(0);
@@ -137,41 +191,43 @@ export default function App() {
       setInTune(false);
       setHasPitch(false);
       setGuidance(null);
-      const hold = timerRef.current.update(false, performance.now(), holdSeconds * 1000);
+      const hold = timerRef.current.update(false, nowMs, holdSecondsRef.current * 1000);
       setProgress(hold.progress);
       setElapsedSeconds(0);
+      wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
     } else {
       const cents = frame.centsFromTarget ?? 0;
       setMicLevel(frame.rms);
       setHasPitch(true);
 
-      const nowMs = performance.now();
       if (frame.midi !== null) {
         midiHistoryRef.current.push({ timeMs: nowMs, midi: frame.midi });
         midiHistoryRef.current = midiHistoryRef.current.filter((item) => nowMs - item.timeMs <= 2500);
       }
 
-      let effectiveVoice: ResolvedVoiceMode = resolvedVoiceMode;
-      if (voiceMode === 'auto') {
+      let effectiveVoice: ResolvedVoiceMode = resolvedVoiceModeRef.current;
+      if (voiceModeRef.current === 'auto') {
         const mids = midiHistoryRef.current.map((item) => item.midi);
         if (mids.length >= 8) {
           const med = median(mids);
           effectiveVoice = med >= 62 ? 'treble' : 'bass';
-          if (effectiveVoice !== resolvedVoiceMode) {
+          if (effectiveVoice !== resolvedVoiceModeRef.current) {
             setResolvedVoiceMode(effectiveVoice);
+            resolvedVoiceModeRef.current = effectiveVoice;
             visualAnchorMidiRef.current = null;
           }
         }
       } else {
-        effectiveVoice = voiceMode;
-        if (effectiveVoice !== resolvedVoiceMode) {
+        effectiveVoice = voiceModeRef.current;
+        if (effectiveVoice !== resolvedVoiceModeRef.current) {
           setResolvedVoiceMode(effectiveVoice);
+          resolvedVoiceModeRef.current = effectiveVoice;
           visualAnchorMidiRef.current = null;
         }
       }
 
       const [minMidi, maxMidi] = effectiveVoice === 'treble' ? TREBLE_RANGE : BASS_RANGE;
-      const candidates = getPitchClassCandidates(target.pitchClass, minMidi, maxMidi);
+      const candidates = getPitchClassCandidates(liveTarget.pitchClass, minMidi, maxMidi);
       const detectedMidi = frame.midi ?? 0;
       const bestCandidate = closestCandidate(detectedMidi, candidates);
       const currentAnchor = visualAnchorMidiRef.current;
@@ -191,11 +247,11 @@ export default function App() {
       const visualCents = (detectedMidi - anchorMidi) * 100;
       setLineOffsetCents(visualCents);
 
-      const matchedClass = frame.pitchClass !== null && matchesPitchClass(frame.pitchClass, target.pitchClass);
-      const currentlyInTune = matchedClass && Math.abs(cents) <= centsTolerance;
+      const matchedClass = frame.pitchClass !== null && matchesPitchClass(frame.pitchClass, liveTarget.pitchClass);
+      const currentlyInTune = matchedClass && Math.abs(cents) <= centsToleranceRef.current;
       setInTune(currentlyInTune);
 
-      const hold = timerRef.current.update(currentlyInTune, performance.now(), holdSeconds * 1000);
+      const hold = timerRef.current.update(currentlyInTune, nowMs, holdSecondsRef.current * 1000);
       setProgress(hold.progress);
       setElapsedSeconds(hold.elapsedMs / 1000);
       setSuccess(hold.success);
@@ -205,22 +261,40 @@ export default function App() {
         setStatusText('Success!');
       } else if (currentlyInTune) {
         setGuidance(null);
-        setStatusText(`Hold it... ${(holdSeconds - hold.elapsedMs / 1000).toFixed(1)}s`);
+        wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
+        setStatusText(`Hold it... ${(holdSecondsRef.current - hold.elapsedMs / 1000).toFixed(1)}s`);
       } else if (frame.pitchClass !== null && !matchedClass) {
         setGuidance(null);
-        setStatusText(`Detected ${pitchClassToLabel(frame.pitchClass)}. Target is ${target.label}.`);
+        setStatusText(`Detected ${pitchClassToLabel(frame.pitchClass)}. Target is ${liveTarget.label}.`);
+
+        const wrongHold = wrongNoteHoldRef.current;
+        if (wrongHold.pitchClass !== frame.pitchClass) {
+          wrongNoteHoldRef.current = { pitchClass: frame.pitchClass, startedMs: nowMs };
+        } else if (
+          wrongHold.startedMs !== null &&
+          nowMs - wrongHold.startedMs >= 3500 &&
+          noteSuggestionRef.current === null
+        ) {
+          const suggestionIndex = notes.findIndex((note) => note.pitchClass === frame.pitchClass);
+          if (suggestionIndex >= 0) {
+            setNoteSuggestion({ index: suggestionIndex, label: notes[suggestionIndex].label });
+          }
+          wrongNoteHoldRef.current = { pitchClass: frame.pitchClass, startedMs: nowMs + 100000 };
+        }
       } else if (Math.abs(cents) > DISPLAY_RANGE_CENTS) {
         const nextGuidance: 'higher' | 'lower' = cents > 0 ? 'lower' : 'higher';
         setGuidance(nextGuidance);
         setStatusText(`Outside range: sing ${nextGuidance}`);
+        wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
       } else {
         setGuidance(null);
         setStatusText('Listening...');
+        wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
       }
     }
 
     frameRef.current = requestAnimationFrame(stepPitchUi);
-  }, [centsTolerance, holdSeconds, target]);
+  }, []);
 
   const startMic = useCallback(async () => {
     try {
@@ -228,6 +302,8 @@ export default function App() {
         trackerRef.current = new MicrophonePitchTracker();
       }
       timerRef.current.reset();
+      wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
+      setNoteSuggestion(null);
       setSuccess(false);
 
       await trackerRef.current.start();
@@ -262,6 +338,8 @@ export default function App() {
     setProgress(0);
     setElapsedSeconds(0);
     timerRef.current.reset();
+    wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
+    setNoteSuggestion(null);
     visualAnchorMidiRef.current = null;
     midiHistoryRef.current = [];
   }, []);
@@ -312,6 +390,16 @@ export default function App() {
         }}
       />
 
+      {noteSuggestion && (
+        <section className="note-suggestion">
+          <p>Would you like to practice {noteSuggestion.label}?</p>
+          <div className="note-suggestion-actions">
+            <button onClick={() => switchToSuggestedNote(noteSuggestion.index)}>Switch Note</button>
+            <button onClick={() => setNoteSuggestion(null)}>Not now</button>
+          </div>
+        </section>
+      )}
+
       <MicPanel
         micRunning={micRunning}
         lineOffsetCents={lineOffsetCents}
@@ -342,9 +430,13 @@ export default function App() {
           setVoiceMode(mode);
           if (mode !== 'auto') {
             setResolvedVoiceMode(mode);
+            resolvedVoiceModeRef.current = mode;
           }
           visualAnchorMidiRef.current = null;
           midiHistoryRef.current = [];
+          wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
+          setNoteSuggestion(null);
+          trackerRef.current?.resetTracking();
         }}
       />
     </main>
