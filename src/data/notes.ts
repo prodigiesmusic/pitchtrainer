@@ -18,7 +18,10 @@ export const notes: NoteDefinition[] = Object.entries(notesRecord).map(([label, 
 }));
 
 export function normalizeAssetPath(path: string): string {
-  const base = import.meta.env.BASE_URL || '/';
+  const rawBase = import.meta.env.BASE_URL || '/';
+  const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  return `${base}${cleanPath}`;
+
+  // Resolve against current origin so GitHub Pages base-path behavior is consistent.
+  return new URL(`${base}${cleanPath}`, window.location.origin).toString();
 }
