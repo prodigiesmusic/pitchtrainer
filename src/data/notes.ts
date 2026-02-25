@@ -18,5 +18,7 @@ export const notes: NoteDefinition[] = Object.entries(notesRecord).map(([label, 
 }));
 
 export function normalizeAssetPath(path: string): string {
-  return path.startsWith('/') ? path : `/${path}`;
+  const base = import.meta.env.BASE_URL || '/';
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  return `${base}${cleanPath}`;
 }
