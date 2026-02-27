@@ -34,11 +34,81 @@ header h1 {
 .target-panel,
 .mic-panel,
 .settings-panel,
-.note-suggestion {
+.note-suggestion,
+.levels-panel,
+.completion-banner {
   border-radius: 16px;
   padding: 1rem;
   background: #ffffff;
   box-shadow: 0 8px 24px rgba(12, 22, 44, 0.08);
+}
+
+.levels-panel {
+  background: linear-gradient(135deg, #ffffff 0%, #f4f9ff 55%, #f0fff6 100%);
+  border: 2px solid #d7e4f7;
+}
+
+.levels-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.levels-top h2 {
+  margin: 0;
+}
+
+.auto-advance-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.levels-grid {
+  margin-top: 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem;
+}
+
+.level-card {
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid #c9d9f0;
+  background: #ffffff;
+  padding: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.level-card strong {
+  font-size: 1rem;
+}
+
+.level-card span {
+  font-size: 0.86rem;
+  color: #40506f;
+}
+
+.level-card.active {
+  border: 2px solid #1b7fda;
+  background: #eef6ff;
+}
+
+.current-level-meta {
+  margin: 0.8rem 0 0 0;
+  font-weight: 700;
+}
+
+.completion-banner {
+  border: 2px solid #3ca95a;
+  background: linear-gradient(90deg, #edfdf2 0%, #f7fff1 50%, #edfffa 100%);
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .target-panel {
@@ -265,6 +335,11 @@ header h1 {
 
   .target-header,
   .mic-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .levels-top {
     flex-direction: column;
     align-items: flex-start;
   }

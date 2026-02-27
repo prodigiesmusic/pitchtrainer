@@ -10,11 +10,26 @@ import { notes, normalizeAssetPath } from './data/notes';
 const DISPLAY_RANGE_CENTS = 600;
 const DEFAULT_HOLD_SECONDS = 5;
 const DEFAULT_CENTS_TOLERANCE = 35;
+const LEVEL_TARGET_SCORE = 30;
 const TREBLE_RANGE: [number, number] = [57, 79]; // A3-G5
 const BASS_RANGE: [number, number] = [45, 67]; // A2-G4
 
+type LevelId = 1 | 2 | 3;
 type VoiceMode = 'auto' | 'treble' | 'bass';
 type ResolvedVoiceMode = 'treble' | 'bass';
+
+const LEVELS: Array<{ id: LevelId; title: string; subtitle: string; pitchClasses: number[] }> = [
+  { id: 1, title: 'Level 1', subtitle: 'C, D, E', pitchClasses: [0, 2, 4] },
+  { id: 2, title: 'Level 2', subtitle: 'C Major scale notes', pitchClasses: [0, 2, 4, 5, 7, 9, 11] },
+  { id: 3, title: 'Level 3', subtitle: 'All chromatic notes', pitchClasses: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }
+];
+
+function levelNotesFor(levelId: LevelId) {
+  const level = LEVELS.find((entry) => entry.id === levelId);
+  if (!level) return notes;
+  const allowed = new Set(level.pitchClasses);
+  return notes.filter((note) => allowed.has(note.pitchClass));
+}
 
 function median(values: number[]): number {
   if (!values.length) return 0;
@@ -50,6 +65,9 @@ function randomIndex(max: number, except: number): number {
 }
 
 export default function App() {
+  const [levelId, setLevelId] = useState<LevelId>(1);
+  const [levelScores, setLevelScores] = useState<Record<LevelId, number>>({ 1: 0, 2: 0, 3: 0 });
+  const [autoAdvanceLevels, setAutoAdvanceLevels] = useState(true);
   const [targetIndex, setTargetIndex] = useState(0);
   const [mode, setMode] = useState<'random' | 'sequential'>('random');
   const [holdSeconds, setHoldSeconds] = useState(DEFAULT_HOLD_SECONDS);
@@ -70,7 +88,8 @@ export default function App() {
   const [bellPulseKey, setBellPulseKey] = useState(0);
   const [bellLoadError, setBellLoadError] = useState(false);
 
-  const target = notes[targetIndex];
+  const levelNotes = useMemo(() => levelNotesFor(levelId), [levelId]);
+  const target = levelNotes[targetIndex] ?? levelNotes[0];
   if (!target) {
     return <main className="app">No notes found in notes.json.</main>;
   }
@@ -80,7 +99,13 @@ export default function App() {
   const frameRef = useRef<number | null>(null);
   const visualAnchorMidiRef = useRef<number | null>(null);
   const midiHistoryRef = useRef<Array<{ timeMs: number; midi: number }>>([]);
+  const advanceTimeoutRef = useRef<number | null>(null);
   const targetRef = useRef(target);
+  const levelIdRef = useRef<LevelId>(levelId);
+  const levelNotesRef = useRef(levelNotes);
+  const levelScoresRef = useRef(levelScores);
+  const autoAdvanceLevelsRef = useRef(autoAdvanceLevels);
+  const modeRef = useRef(mode);
   const holdSecondsRef = useRef(holdSeconds);
   const centsToleranceRef = useRef(centsTolerance);
   const voiceModeRef = useRef<VoiceMode>(voiceMode);
@@ -96,6 +121,29 @@ export default function App() {
   useEffect(() => {
     targetRef.current = target;
   }, [target]);
+
+  useEffect(() => {
+    levelIdRef.current = levelId;
+  }, [levelId]);
+
+  useEffect(() => {
+    levelNotesRef.current = levelNotes;
+    if (targetIndex >= levelNotes.length) {
+      setTargetIndex(0);
+    }
+  }, [levelNotes, targetIndex]);
+
+  useEffect(() => {
+    levelScoresRef.current = levelScores;
+  }, [levelScores]);
+
+  useEffect(() => {
+    autoAdvanceLevelsRef.current = autoAdvanceLevels;
+  }, [autoAdvanceLevels]);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   useEffect(() => {
     holdSecondsRef.current = holdSeconds;
@@ -117,6 +165,18 @@ export default function App() {
     noteSuggestionRef.current = noteSuggestion;
   }, [noteSuggestion]);
 
+  const resetRoundState = useCallback(() => {
+    setSuccess(false);
+    setNoteSuggestion(null);
+    timerRef.current.reset();
+    wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
+    visualAnchorMidiRef.current = null;
+    midiHistoryRef.current = [];
+    trackerRef.current?.resetTracking();
+    setProgress(0);
+    setElapsedSeconds(0);
+  }, []);
+
   const playTargetSample = useCallback(() => {
     if (!target) return;
 
@@ -133,36 +193,69 @@ export default function App() {
   }, [target]);
 
   const gotoNextNote = useCallback(() => {
-    setSuccess(false);
-    setNoteSuggestion(null);
-    timerRef.current.reset();
-    wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
-    visualAnchorMidiRef.current = null;
-    midiHistoryRef.current = [];
-    trackerRef.current?.resetTracking();
-    setProgress(0);
-    setElapsedSeconds(0);
-
+    resetRoundState();
     setTargetIndex((current) => {
-      if (mode === 'sequential') {
-        return (current + 1) % notes.length;
+      const pool = levelNotesRef.current;
+      if (pool.length <= 1) return 0;
+      if (modeRef.current === 'sequential') {
+        return (current + 1) % pool.length;
       }
-      return randomIndex(notes.length, current);
+      return randomIndex(pool.length, current);
     });
-  }, [mode]);
+  }, [resetRoundState]);
 
   const switchToSuggestedNote = useCallback((index: number) => {
     setTargetIndex(index);
-    setNoteSuggestion(null);
-    setSuccess(false);
-    timerRef.current.reset();
-    wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
-    visualAnchorMidiRef.current = null;
-    midiHistoryRef.current = [];
-    trackerRef.current?.resetTracking();
-    setProgress(0);
-    setElapsedSeconds(0);
-  }, []);
+    resetRoundState();
+  }, [resetRoundState]);
+
+  const scheduleAdvanceAfterSuccess = useCallback(() => {
+    if (advanceTimeoutRef.current !== null) {
+      window.clearTimeout(advanceTimeoutRef.current);
+      advanceTimeoutRef.current = null;
+    }
+
+    advanceTimeoutRef.current = window.setTimeout(() => {
+      const currentLevel = levelIdRef.current;
+      const currentScores = levelScoresRef.current;
+      const currentScore = currentScores[currentLevel];
+      const nextScore = Math.min(LEVEL_TARGET_SCORE, currentScore + 1);
+      const updatedScores = { ...currentScores, [currentLevel]: nextScore } as Record<LevelId, number>;
+      levelScoresRef.current = updatedScores;
+      setLevelScores(updatedScores);
+
+      const justCompletedLevel = currentScore < LEVEL_TARGET_SCORE && nextScore >= LEVEL_TARGET_SCORE;
+      const canAutoAdvance = autoAdvanceLevelsRef.current && currentLevel < 3;
+
+      if (justCompletedLevel && canAutoAdvance) {
+        const nextLevel = (currentLevel + 1) as LevelId;
+        setLevelId(nextLevel);
+        levelIdRef.current = nextLevel;
+        setTargetIndex(0);
+        setStatusText(`Level ${currentLevel} complete. Welcome to Level ${nextLevel}!`);
+        resetRoundState();
+        return;
+      }
+
+      if (justCompletedLevel && currentLevel === 3) {
+        setStatusText('Level 3 complete!');
+      }
+
+      if (justCompletedLevel && !canAutoAdvance && currentLevel < 3) {
+        setStatusText(`Level ${currentLevel} complete. Select Level ${currentLevel + 1} when ready.`);
+      }
+
+      resetRoundState();
+      setTargetIndex((current) => {
+        const pool = levelNotesRef.current;
+        if (pool.length <= 1) return 0;
+        if (modeRef.current === 'sequential') {
+          return (current + 1) % pool.length;
+        }
+        return randomIndex(pool.length, current);
+      });
+    }, 700);
+  }, [resetRoundState]);
 
   const stepPitchUi = useCallback(() => {
     const liveTarget = targetRef.current;
@@ -258,7 +351,8 @@ export default function App() {
 
       if (hold.justSucceeded) {
         setGuidance(null);
-        setStatusText('Success!');
+        setStatusText('Success! +1 point');
+        scheduleAdvanceAfterSuccess();
       } else if (currentlyInTune) {
         setGuidance(null);
         wrongNoteHoldRef.current = { pitchClass: null, startedMs: null };
@@ -275,9 +369,9 @@ export default function App() {
           nowMs - wrongHold.startedMs >= 3500 &&
           noteSuggestionRef.current === null
         ) {
-          const suggestionIndex = notes.findIndex((note) => note.pitchClass === frame.pitchClass);
+          const suggestionIndex = levelNotesRef.current.findIndex((note) => note.pitchClass === frame.pitchClass);
           if (suggestionIndex >= 0) {
-            setNoteSuggestion({ index: suggestionIndex, label: notes[suggestionIndex].label });
+            setNoteSuggestion({ index: suggestionIndex, label: levelNotesRef.current[suggestionIndex].label });
           }
           wrongNoteHoldRef.current = { pitchClass: frame.pitchClass, startedMs: nowMs + 100000 };
         }
@@ -294,7 +388,7 @@ export default function App() {
     }
 
     frameRef.current = requestAnimationFrame(stepPitchUi);
-  }, []);
+  }, [scheduleAdvanceAfterSuccess]);
 
   const startMic = useCallback(async () => {
     try {
@@ -342,6 +436,10 @@ export default function App() {
     setNoteSuggestion(null);
     visualAnchorMidiRef.current = null;
     midiHistoryRef.current = [];
+    if (advanceTimeoutRef.current !== null) {
+      window.clearTimeout(advanceTimeoutRef.current);
+      advanceTimeoutRef.current = null;
+    }
   }, []);
 
   const toggleMic = useCallback(() => {
@@ -363,10 +461,16 @@ export default function App() {
       if (frameRef.current !== null) {
         cancelAnimationFrame(frameRef.current);
       }
+      if (advanceTimeoutRef.current !== null) {
+        window.clearTimeout(advanceTimeoutRef.current);
+      }
       trackerRef.current?.stop();
       audioRef.current?.pause();
     };
   }, []);
+
+  const allLevelsComplete = levelScores[3] >= LEVEL_TARGET_SCORE;
+  const currentLevelConfig = LEVELS.find((entry) => entry.id === levelId) ?? LEVELS[0];
 
   const appStyle = useMemo(() => ({ '--target-color': target.hex } as CSSProperties), [target.hex]);
 
@@ -376,10 +480,58 @@ export default function App() {
         <h1>Prodigies Pitch Recall Trainer</h1>
       </header>
 
+      <section className="levels-panel">
+        <div className="levels-top">
+          <h2>Challenge Levels</h2>
+          <label className="auto-advance-toggle">
+            <input
+              type="checkbox"
+              checked={autoAdvanceLevels}
+              onChange={(event) => setAutoAdvanceLevels(event.target.checked)}
+            />
+            Auto-advance levels at {LEVEL_TARGET_SCORE} points
+          </label>
+        </div>
+        <div className="levels-grid">
+          {LEVELS.map((level) => (
+            <button
+              key={level.id}
+              className={`level-card ${level.id === levelId ? 'active' : ''}`}
+              onClick={() => {
+                setLevelId(level.id);
+                levelIdRef.current = level.id;
+                setTargetIndex(0);
+                resetRoundState();
+                setStatusText(`Switched to ${level.title}.`);
+              }}
+            >
+              <strong>{level.title}</strong>
+              <span>{level.subtitle}</span>
+              <span>
+                Score: {levelScores[level.id]} / {LEVEL_TARGET_SCORE}
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className="current-level-meta">
+          Playing {currentLevelConfig.title}: {currentLevelConfig.subtitle} ({levelScores[levelId]} / {LEVEL_TARGET_SCORE}
+          )
+        </p>
+      </section>
+
+      {allLevelsComplete && (
+        <section className="completion-banner">
+          Congratulations! You've passed all three levels and are on your way to a lifetime of singing in tune!
+        </section>
+      )}
+
       <TargetPanel
         note={target}
         mode={mode}
-        onModeChange={setMode}
+        onModeChange={(nextMode) => {
+          setMode(nextMode);
+          modeRef.current = nextMode;
+        }}
         onNextNote={gotoNextNote}
         onReplay={playTargetSample}
         bellPulseKey={bellPulseKey}

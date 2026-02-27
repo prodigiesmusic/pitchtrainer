@@ -4,6 +4,13 @@ Browser-only React + Vite prototype for pitch recall / live voice tuning.
 
 ## What it does
 
+- Three-level progression system:
+  - Level 1: C, D, E
+  - Level 2: C major diatonic notes
+  - Level 3: all 12 chromatic notes
+- 30-point goal per level (`+1` point per successful hold)
+- Optional auto-advance to next level after reaching 30 points
+- Final completion banner after clearing all three levels
 - Loads note definitions from `notes.json` (single source of truth)
 - Shows target note label, bell image, and plays bell sample
 - Supports `Sequential` and `Random` note modes
