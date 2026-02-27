@@ -161,11 +161,6 @@ header h1 {
 .bell-image {
   width: min(260px, 70vw);
   height: auto;
-  transition: transform 180ms ease;
-}
-
-.bell-image.pulse {
-  animation: bellPulse 280ms ease;
 }
 
 .bell-placeholder {
@@ -314,18 +309,6 @@ header h1 {
   flex-direction: column;
   gap: 0.4rem;
   font-weight: 600;
-}
-
-@keyframes bellPulse {
-  0% {
-    transform: scale(1);
-  }
-  55% {
-    transform: scale(1.08);
-  }
-  100% {
-    transform: scale(1);
-  }
 }
 
 @media (max-width: 640px) {

@@ -13,7 +13,7 @@ const DEFAULT_CENTS_TOLERANCE = 35;
 const TREBLE_RANGE: [number, number] = [57, 79]; // A3-G5
 const BASS_RANGE: [number, number] = [45, 67]; // A2-G4
 
-type LevelId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type LevelId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 type VoiceMode = 'auto' | 'treble' | 'bass';
 type ResolvedVoiceMode = 'treble' | 'bass';
 
@@ -36,7 +36,33 @@ const LEVELS: Array<{ id: LevelId; title: string; subtitle: string; goal: number
     goal: 20,
     noteLabels: ['High C', 'High D', 'High E', 'High F', 'High G']
   },
-  { id: 7, title: 'Level 7', subtitle: 'All pitches in the library', goal: 30 }
+  { id: 7, title: 'Level 7', subtitle: 'C#, D#, F#, G#, A#', goal: 20, noteLabels: ['C#/Db', 'D#/Eb', 'F#/Gb', 'G#/Ab', 'A#/Bb'] },
+  {
+    id: 8,
+    title: 'Level 8',
+    subtitle: 'Low G#, A#, C#, D#, F#',
+    goal: 20,
+    noteLabels: ['Low G#/Ab', 'A#/Bb', 'C#/Db', 'D#/Eb', 'F#/Gb']
+  },
+  {
+    id: 9,
+    title: 'Level 9',
+    subtitle: 'All sharp/flat notes',
+    goal: 20,
+    noteLabels: [
+      'Low G#/Ab',
+      'Low A#/Bb',
+      'C#/Db',
+      'D#/Eb',
+      'F#/Gb',
+      'G#/Ab',
+      'A#/Bb',
+      'High C#/Db',
+      'High D#/Eb',
+      'High F#/Gb'
+    ]
+  },
+  { id: 10, title: 'Level 10', subtitle: 'All notes in the library', goal: 30 }
 ];
 
 function levelNotesFor(levelId: LevelId) {
@@ -97,7 +123,10 @@ export default function App() {
     4: 0,
     5: 0,
     6: 0,
-    7: 0
+    7: 0,
+    8: 0,
+    9: 0,
+    10: 0
   });
   const [autoAdvanceLevels, setAutoAdvanceLevels] = useState(true);
   const [targetIndex, setTargetIndex] = useState(0);
@@ -270,7 +299,7 @@ export default function App() {
       setLevelScores(updatedScores);
 
       const justCompletedLevel = currentScore < goal && nextScore >= goal;
-      const canAutoAdvance = autoAdvanceLevelsRef.current && currentLevel < 7;
+      const canAutoAdvance = autoAdvanceLevelsRef.current && currentLevel < 10;
 
       if (justCompletedLevel && canAutoAdvance) {
         const nextLevel = (currentLevel + 1) as LevelId;
@@ -282,11 +311,11 @@ export default function App() {
         return;
       }
 
-      if (justCompletedLevel && currentLevel === 7) {
-        setStatusText('Level 7 complete!');
+      if (justCompletedLevel && currentLevel === 10) {
+        setStatusText('Level 10 complete!');
       }
 
-      if (justCompletedLevel && !canAutoAdvance && currentLevel < 7) {
+      if (justCompletedLevel && !canAutoAdvance && currentLevel < 10) {
         setStatusText(`Level ${currentLevel} complete. Select Level ${currentLevel + 1} when ready.`);
       }
 
@@ -518,7 +547,7 @@ export default function App() {
     };
   }, []);
 
-  const allLevelsComplete = levelScores[7] >= levelGoal(7);
+  const allLevelsComplete = levelScores[10] >= levelGoal(10);
   const currentLevelConfig = LEVELS.find((entry) => entry.id === levelId) ?? LEVELS[0];
   const currentLevelGoal = currentLevelConfig.goal;
 
@@ -570,7 +599,7 @@ export default function App() {
 
       {allLevelsComplete && (
         <section className="completion-banner">
-          Congratulations! You've passed all seven levels and are on your way to a lifetime of singing in tune!
+          Congratulations! You've passed all ten levels and are on your way to a lifetime of singing in tune!
         </section>
       )}
 

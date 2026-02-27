@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { NoteDefinition } from '../data/notes';
 import { normalizeAssetPath } from '../data/notes';
 
@@ -23,7 +22,6 @@ export function TargetPanel({
   bellLoadError,
   onBellLoadError
 }: TargetPanelProps) {
-  const bellClassName = useMemo(() => `bell-image ${bellIsActive ? 'pulse' : ''}`, [bellIsActive]);
   const bellSrc = bellIsActive && note.bellActivePng ? note.bellActivePng : note.bellPng;
 
   return (
@@ -45,7 +43,7 @@ export function TargetPanel({
           <div className="bell-placeholder">Bell image missing</div>
         ) : (
           <img
-            className={bellClassName}
+            className="bell-image"
             src={normalizeAssetPath(bellSrc)}
             alt={`${note.label} desk bell`}
             onError={onBellLoadError}
