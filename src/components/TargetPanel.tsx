@@ -8,7 +8,7 @@ interface TargetPanelProps {
   onModeChange: (mode: 'random' | 'sequential') => void;
   onNextNote: () => void;
   onReplay: () => void;
-  bellPulseKey: number;
+  bellIsActive: boolean;
   bellLoadError: boolean;
   onBellLoadError: () => void;
 }
@@ -19,11 +19,12 @@ export function TargetPanel({
   onModeChange,
   onNextNote,
   onReplay,
-  bellPulseKey,
+  bellIsActive,
   bellLoadError,
   onBellLoadError
 }: TargetPanelProps) {
-  const bellClassName = useMemo(() => `bell-image ${bellPulseKey % 2 ? 'pulse' : ''}`, [bellPulseKey]);
+  const bellClassName = useMemo(() => `bell-image ${bellIsActive ? 'pulse' : ''}`, [bellIsActive]);
+  const bellSrc = bellIsActive && note.bellActivePng ? note.bellActivePng : note.bellPng;
 
   return (
     <section className="target-panel" style={{ borderColor: note.hex }}>
@@ -45,7 +46,7 @@ export function TargetPanel({
         ) : (
           <img
             className={bellClassName}
-            src={normalizeAssetPath(note.bellPng)}
+            src={normalizeAssetPath(bellSrc)}
             alt={`${note.label} desk bell`}
             onError={onBellLoadError}
           />

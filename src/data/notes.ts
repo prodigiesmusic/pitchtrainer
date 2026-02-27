@@ -5,6 +5,7 @@ export interface NoteDefinition {
   pitchClass: number;
   hex: string;
   bellPng: string;
+  bellActivePng?: string;
   sampleMp3: string;
 }
 

@@ -10,25 +10,49 @@ import { notes, normalizeAssetPath } from './data/notes';
 const DISPLAY_RANGE_CENTS = 600;
 const DEFAULT_HOLD_SECONDS = 5;
 const DEFAULT_CENTS_TOLERANCE = 35;
-const LEVEL_TARGET_SCORE = 30;
 const TREBLE_RANGE: [number, number] = [57, 79]; // A3-G5
 const BASS_RANGE: [number, number] = [45, 67]; // A2-G4
 
-type LevelId = 1 | 2 | 3;
+type LevelId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 type VoiceMode = 'auto' | 'treble' | 'bass';
 type ResolvedVoiceMode = 'treble' | 'bass';
 
-const LEVELS: Array<{ id: LevelId; title: string; subtitle: string; pitchClasses: number[] }> = [
-  { id: 1, title: 'Level 1', subtitle: 'C, D, E', pitchClasses: [0, 2, 4] },
-  { id: 2, title: 'Level 2', subtitle: 'C Major scale notes', pitchClasses: [0, 2, 4, 5, 7, 9, 11] },
-  { id: 3, title: 'Level 3', subtitle: 'All chromatic notes', pitchClasses: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }
+const LEVELS: Array<{ id: LevelId; title: string; subtitle: string; goal: number; noteLabels?: string[] }> = [
+  { id: 1, title: 'Level 1', subtitle: 'C, D, E', goal: 10, noteLabels: ['C', 'D', 'E'] },
+  { id: 2, title: 'Level 2', subtitle: 'F, G, A', goal: 10, noteLabels: ['F', 'G', 'A'] },
+  { id: 3, title: 'Level 3', subtitle: 'A, B, High C', goal: 10, noteLabels: ['A', 'B', 'High C'] },
+  { id: 4, title: 'Level 4', subtitle: 'Low G, Low A, Low B', goal: 10, noteLabels: ['Low G', 'Low A', 'Low B'] },
+  {
+    id: 5,
+    title: 'Level 5',
+    subtitle: 'All diatonic notes so far',
+    goal: 20,
+    noteLabels: ['Low G', 'Low A', 'Low B', 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'High C']
+  },
+  {
+    id: 6,
+    title: 'Level 6',
+    subtitle: 'High C, D, E, F, G',
+    goal: 20,
+    noteLabels: ['High C', 'High D', 'High E', 'High F', 'High G']
+  },
+  { id: 7, title: 'Level 7', subtitle: 'All pitches in the library', goal: 30 }
 ];
 
 function levelNotesFor(levelId: LevelId) {
   const level = LEVELS.find((entry) => entry.id === levelId);
   if (!level) return notes;
-  const allowed = new Set(level.pitchClasses);
-  return notes.filter((note) => allowed.has(note.pitchClass));
+  if (!level.noteLabels?.length) {
+    return notes;
+  }
+  const byLabel = new Map(notes.map((note) => [note.label, note]));
+  return level.noteLabels
+    .map((label) => byLabel.get(label))
+    .filter((note): note is (typeof notes)[number] => Boolean(note));
+}
+
+function levelGoal(levelId: LevelId): number {
+  return LEVELS.find((entry) => entry.id === levelId)?.goal ?? 10;
 }
 
 function median(values: number[]): number {
@@ -66,7 +90,15 @@ function randomIndex(max: number, except: number): number {
 
 export default function App() {
   const [levelId, setLevelId] = useState<LevelId>(1);
-  const [levelScores, setLevelScores] = useState<Record<LevelId, number>>({ 1: 0, 2: 0, 3: 0 });
+  const [levelScores, setLevelScores] = useState<Record<LevelId, number>>({
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+    6: 0,
+    7: 0
+  });
   const [autoAdvanceLevels, setAutoAdvanceLevels] = useState(true);
   const [targetIndex, setTargetIndex] = useState(0);
   const [mode, setMode] = useState<'random' | 'sequential'>('random');
@@ -85,7 +117,7 @@ export default function App() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [success, setSuccess] = useState(false);
   const [noteSuggestion, setNoteSuggestion] = useState<{ index: number; label: string } | null>(null);
-  const [bellPulseKey, setBellPulseKey] = useState(0);
+  const [bellIsActive, setBellIsActive] = useState(false);
   const [bellLoadError, setBellLoadError] = useState(false);
 
   const levelNotes = useMemo(() => levelNotesFor(levelId), [levelId]);
@@ -117,6 +149,7 @@ export default function App() {
   const noteSuggestionRef = useRef<{ index: number; label: string } | null>(noteSuggestion);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const bellActiveTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     targetRef.current = target;
@@ -166,6 +199,10 @@ export default function App() {
   }, [noteSuggestion]);
 
   const resetRoundState = useCallback(() => {
+    if (advanceTimeoutRef.current !== null) {
+      window.clearTimeout(advanceTimeoutRef.current);
+      advanceTimeoutRef.current = null;
+    }
     setSuccess(false);
     setNoteSuggestion(null);
     timerRef.current.reset();
@@ -189,7 +226,14 @@ export default function App() {
       console.warn(`Could not autoplay sample ${path}. User gesture may be required.`, error);
     });
 
-    setBellPulseKey((value) => value + 1);
+    setBellIsActive(true);
+    if (bellActiveTimeoutRef.current !== null) {
+      window.clearTimeout(bellActiveTimeoutRef.current);
+    }
+    bellActiveTimeoutRef.current = window.setTimeout(() => {
+      setBellIsActive(false);
+      bellActiveTimeoutRef.current = null;
+    }, 220);
   }, [target]);
 
   const gotoNextNote = useCallback(() => {
@@ -217,15 +261,16 @@ export default function App() {
 
     advanceTimeoutRef.current = window.setTimeout(() => {
       const currentLevel = levelIdRef.current;
+      const goal = levelGoal(currentLevel);
       const currentScores = levelScoresRef.current;
       const currentScore = currentScores[currentLevel];
-      const nextScore = Math.min(LEVEL_TARGET_SCORE, currentScore + 1);
+      const nextScore = Math.min(goal, currentScore + 1);
       const updatedScores = { ...currentScores, [currentLevel]: nextScore } as Record<LevelId, number>;
       levelScoresRef.current = updatedScores;
       setLevelScores(updatedScores);
 
-      const justCompletedLevel = currentScore < LEVEL_TARGET_SCORE && nextScore >= LEVEL_TARGET_SCORE;
-      const canAutoAdvance = autoAdvanceLevelsRef.current && currentLevel < 3;
+      const justCompletedLevel = currentScore < goal && nextScore >= goal;
+      const canAutoAdvance = autoAdvanceLevelsRef.current && currentLevel < 7;
 
       if (justCompletedLevel && canAutoAdvance) {
         const nextLevel = (currentLevel + 1) as LevelId;
@@ -237,11 +282,11 @@ export default function App() {
         return;
       }
 
-      if (justCompletedLevel && currentLevel === 3) {
-        setStatusText('Level 3 complete!');
+      if (justCompletedLevel && currentLevel === 7) {
+        setStatusText('Level 7 complete!');
       }
 
-      if (justCompletedLevel && !canAutoAdvance && currentLevel < 3) {
+      if (justCompletedLevel && !canAutoAdvance && currentLevel < 7) {
         setStatusText(`Level ${currentLevel} complete. Select Level ${currentLevel + 1} when ready.`);
       }
 
@@ -426,6 +471,7 @@ export default function App() {
     setStatusText('Mic stopped.');
     setLineOffsetCents(0);
     setMicLevel(0);
+    setBellIsActive(false);
     setInTune(false);
     setHasPitch(false);
     setGuidance(null);
@@ -464,13 +510,17 @@ export default function App() {
       if (advanceTimeoutRef.current !== null) {
         window.clearTimeout(advanceTimeoutRef.current);
       }
+      if (bellActiveTimeoutRef.current !== null) {
+        window.clearTimeout(bellActiveTimeoutRef.current);
+      }
       trackerRef.current?.stop();
       audioRef.current?.pause();
     };
   }, []);
 
-  const allLevelsComplete = levelScores[3] >= LEVEL_TARGET_SCORE;
+  const allLevelsComplete = levelScores[7] >= levelGoal(7);
   const currentLevelConfig = LEVELS.find((entry) => entry.id === levelId) ?? LEVELS[0];
+  const currentLevelGoal = currentLevelConfig.goal;
 
   const appStyle = useMemo(() => ({ '--target-color': target.hex } as CSSProperties), [target.hex]);
 
@@ -489,7 +539,7 @@ export default function App() {
               checked={autoAdvanceLevels}
               onChange={(event) => setAutoAdvanceLevels(event.target.checked)}
             />
-            Auto-advance levels at {LEVEL_TARGET_SCORE} points
+            Auto-advance levels when each goal is reached
           </label>
         </div>
         <div className="levels-grid">
@@ -508,20 +558,19 @@ export default function App() {
               <strong>{level.title}</strong>
               <span>{level.subtitle}</span>
               <span>
-                Score: {levelScores[level.id]} / {LEVEL_TARGET_SCORE}
+                Score: {levelScores[level.id]} / {level.goal}
               </span>
             </button>
           ))}
         </div>
         <p className="current-level-meta">
-          Playing {currentLevelConfig.title}: {currentLevelConfig.subtitle} ({levelScores[levelId]} / {LEVEL_TARGET_SCORE}
-          )
+          Playing {currentLevelConfig.title}: {currentLevelConfig.subtitle} ({levelScores[levelId]} / {currentLevelGoal})
         </p>
       </section>
 
       {allLevelsComplete && (
         <section className="completion-banner">
-          Congratulations! You've passed all three levels and are on your way to a lifetime of singing in tune!
+          Congratulations! You've passed all seven levels and are on your way to a lifetime of singing in tune!
         </section>
       )}
 
@@ -534,7 +583,7 @@ export default function App() {
         }}
         onNextNote={gotoNextNote}
         onReplay={playTargetSample}
-        bellPulseKey={bellPulseKey}
+        bellIsActive={bellIsActive}
         bellLoadError={bellLoadError}
         onBellLoadError={() => {
           setBellLoadError(true);

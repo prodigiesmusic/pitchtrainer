@@ -1,74 +1,177 @@
 {
+  "Low G": {
+    "pitchClass": 7,
+    "hex": "#05ACA7",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_low_g.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_low_g_active.png",
+    "sampleMp3": "samples/mp3/bc_low_g_bell_sound.mp3"
+  },
+  "Low G#/Ab": {
+    "pitchClass": 8,
+    "hex": "#2297EA",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_low_g_sharp.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_low_g_sharp_active.png",
+    "sampleMp3": "samples/mp3/bc_low_g_sharp_bell_sound.mp3"
+  },
+  "Low A": {
+    "pitchClass": 9,
+    "hex": "#9267BD",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_low_a.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_low_a_active.png",
+    "sampleMp3": "samples/mp3/bc_low_a_bell_sound.mp3"
+  },
+  "Low A#/Bb": {
+    "pitchClass": 10,
+    "hex": "#BE6DAC",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_low_a_sharp.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_low_a_sharp_active.png",
+    "sampleMp3": "samples/mp3/bc_low_a_sharp_bell_sound.mp3"
+  },
+  "Low B": {
+    "pitchClass": 11,
+    "hex": "#FF80C3",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_low_b.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_low_b_active.png",
+    "sampleMp3": "samples/mp3/bc_low_b_bell_sound.mp3"
+  },
   "C": {
     "pitchClass": 0,
     "hex": "#FF2F31",
-    "bellPng": "bells/C.png",
-    "sampleMp3": "samples/C.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_c.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_c_active.png",
+    "sampleMp3": "samples/mp3/bc_c_bell_sound.mp3"
   },
   "C#/Db": {
     "pitchClass": 1,
     "hex": "#FF662A",
-    "bellPng": "bells/Csharp_Db.png",
-    "sampleMp3": "samples/Csharp_Db.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_c_sharp.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_c_sharp_active.png",
+    "sampleMp3": "samples/mp3/bc_c_sharp_bell_sound.mp3"
   },
   "D": {
     "pitchClass": 2,
     "hex": "#FEB129",
-    "bellPng": "bells/D.png",
-    "sampleMp3": "samples/D.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_d.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_d_active.png",
+    "sampleMp3": "samples/mp3/bc_d_bell_sound.mp3"
   },
   "D#/Eb": {
     "pitchClass": 3,
     "hex": "#FFFB6D",
-    "bellPng": "bells/Dsharp_Eb.png",
-    "sampleMp3": "samples/Dsharp_Eb.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_d_sharp.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_d_sharp_active.png",
+    "sampleMp3": "samples/mp3/bc_d_sharp_bell_sound.mp3"
   },
   "E": {
     "pitchClass": 4,
     "hex": "#FFFF05",
-    "bellPng": "bells/E.png",
-    "sampleMp3": "samples/E.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_e.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_e_active.png",
+    "sampleMp3": "samples/mp3/bc_e_bell_sound.mp3"
   },
   "F": {
     "pitchClass": 5,
     "hex": "#7EDC54",
-    "bellPng": "bells/F.png",
-    "sampleMp3": "samples/F.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_f.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_f_active.png",
+    "sampleMp3": "samples/mp3/bc_f_bell_sound.mp3"
   },
   "F#/Gb": {
     "pitchClass": 6,
     "hex": "#79E59B",
-    "bellPng": "bells/Fsharp_Gb.png",
-    "sampleMp3": "samples/Fsharp_Gb.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_f_sharp.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_f_sharp_active.png",
+    "sampleMp3": "samples/mp3/bc_f_sharp_bell_sound.mp3"
   },
   "G": {
     "pitchClass": 7,
     "hex": "#05ACA7",
-    "bellPng": "bells/G.png",
-    "sampleMp3": "samples/G.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_g.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_g_active.png",
+    "sampleMp3": "samples/mp3/bc_g_bell_sound.mp3"
   },
   "G#/Ab": {
     "pitchClass": 8,
     "hex": "#2297EA",
-    "bellPng": "bells/Gsharp_Ab.png",
-    "sampleMp3": "samples/Gsharp_Ab.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_g_sharp.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_g_sharp_active.png",
+    "sampleMp3": "samples/mp3/bc_g_sharp_bell_sound.mp3"
   },
   "A": {
     "pitchClass": 9,
     "hex": "#9267BD",
-    "bellPng": "bells/A.png",
-    "sampleMp3": "samples/A.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_a.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_a_active.png",
+    "sampleMp3": "samples/mp3/bc_a_bell_sound.mp3"
   },
   "A#/Bb": {
     "pitchClass": 10,
     "hex": "#BE6DAC",
-    "bellPng": "bells/Asharp_Bb.png",
-    "sampleMp3": "samples/Asharp_Bb.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_high_a_sharp.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_high_a_sharp_active.png",
+    "sampleMp3": "samples/mp3/bc_a_sharp_bell_sound.mp3"
   },
   "B": {
     "pitchClass": 11,
     "hex": "#FF80C3",
-    "bellPng": "bells/B.png",
-    "sampleMp3": "samples/B.mp3"
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_b.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_b_active.png",
+    "sampleMp3": "samples/mp3/bc_b_bell_sound.mp3"
+  },
+  "High C": {
+    "pitchClass": 0,
+    "hex": "#FF2F31",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_high_c.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_high_c_active.png",
+    "sampleMp3": "samples/mp3/bc_high_c_bell_sound.mp3"
+  },
+  "High C#/Db": {
+    "pitchClass": 1,
+    "hex": "#FF662A",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_high_c_sharp.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_high_c_sharp_active.png",
+    "sampleMp3": "samples/mp3/bc_high_c_sharp_bell_sound.mp3"
+  },
+  "High D": {
+    "pitchClass": 2,
+    "hex": "#FEB129",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_high_d.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_high_d_active.png",
+    "sampleMp3": "samples/mp3/bc_high_d_bell_sound.mp3"
+  },
+  "High D#/Eb": {
+    "pitchClass": 3,
+    "hex": "#FFFB6D",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_high_d_sharp.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_high_d_sharp_active.png",
+    "sampleMp3": "samples/mp3/bc_high_d_sharp_bell_sound.mp3"
+  },
+  "High E": {
+    "pitchClass": 4,
+    "hex": "#FFFF05",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_high_e.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_high_e_active.png",
+    "sampleMp3": "samples/mp3/bc_high_e_bell_sound.mp3"
+  },
+  "High F": {
+    "pitchClass": 5,
+    "hex": "#7EDC54",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_high_f.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_high_f_active.png",
+    "sampleMp3": "samples/mp3/bc_high_f_bell_sound.mp3"
+  },
+  "High F#/Gb": {
+    "pitchClass": 6,
+    "hex": "#79E59B",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_high_f_sharp.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_high_f_sharp_active.png",
+    "sampleMp3": "samples/mp3/bc_high_f_sharp_bell_sound.mp3"
+  },
+  "High G": {
+    "pitchClass": 7,
+    "hex": "#05ACA7",
+    "bellPng": "bells/bell-images-1/PNG/bc_bell_high_g.png",
+    "bellActivePng": "bells/bell-images-1/PNG/bc_bell_high_g_active.png",
+    "sampleMp3": "samples/mp3/bc_high_g_bell_sound.mp3"
   }
 }
